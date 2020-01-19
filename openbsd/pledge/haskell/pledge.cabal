@@ -1,0 +1,43 @@
+name:                pledge
+version:             0.1.0
+synopsis:            ..
+description:         ...
+homepage:            https://github.com/neosimsim/pledge-ex
+license:             BSD3
+license-file:        LICENSE
+author:              Alexander Ben Nasrallah
+maintainer:          me@abn.sh
+-- copyright:
+category:            Misc
+build-type:          Simple
+extra-source-files:  CHANGELOG.md
+cabal-version:       >=1.10
+
+source-repository head
+  type:              git
+  location:          https://github.com/neosimsim/pledge-ex
+
+flag develop
+  description: Enable warnings and treat them as error.
+  default:     False
+  manual:      True
+
+library
+  exposed-modules: Lib
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base == 4.*, unix
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  if flag(develop)
+    ghc-options: -Wall -Werror -Wno-type-defaults
+
+executable pledge
+  main-is:             Main.hs
+  -- other-modules:
+  -- other-extensions:
+  build-depends:       base == 4.*, pledge, unix
+  hs-source-dirs:      app
+  default-language:    Haskell2010
+  if flag(develop)
+    ghc-options: -Wall -Werror -Wno-type-defaults
