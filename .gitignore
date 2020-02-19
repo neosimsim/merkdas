@@ -1,5 +1,9 @@
-dist-newstyle
-dist
-.ghc.environment.*
-pledge
+*.agdai
 *.o
+.ghc.environment.*
+dist
+dist-newstyle
+MAlonzo/
+pledge
+agda/io/std-lib
+agda/io/builtin
