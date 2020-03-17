@@ -1,0 +1,103 @@
+% The MIT License (MIT)
+% 
+% Copyright (c) 2015 Alexander Ben Nasrallah
+% 
+% Permission is hereby granted, free of charge, to any person obtaining a copy
+% of this software and associated documentation files (the "Software"), to deal
+% in the Software without restriction, including without limitation the rights
+% to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+% copies of the Software, and to permit persons to whom the Software is
+% furnished to do so, subject to the following conditions:
+% 
+% The above copyright notice and this permission notice shall be included in all
+% copies or substantial portions of the Software.
+% 
+% THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+% IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+% FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+% AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+% LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+% OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+% SOFTWARE.
+
+\documentclass[a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[ngerman]{babel}
+\usepackage{listings}
+\usepackage[colorlinks=true, linktoc=page]{hyperref}
+\usepackage[]{color}
+\usepackage[backend=biber]{biblatex}                 % Biber ist der Standardwert. Eine Alternative ist bibtex.
+\addbibresource{literatur.bib}
+
+\bibliography{literatur}
+\lstdefinestyle{latex}{
+	keywordstyle=\bfseries,
+	backgroundcolor=\color{white},
+	frame=single,
+}
+
+\lstset{
+	language=sh,
+	morekeywords={begin,bibitem,emph,addbibresource},
+	tabsize=4,
+	style=latex
+}
+
+\begin{document}
+Es gibt verschiedene Varianten ein Literaturverzeichnis mit \LaTeX{} zu
+erstellen. Hier gehen wir auf die Verwendung von \emph{BibLaTeX} ein.
+
+\tableofcontents
+
+\emph{BibLaTeX} ist der Nachfolger von \emph{BibTeX} \cite{wikiBibliography} und wir werden uns hier auf
+\emph{BibLaTeX} einschrenken. \emph{BibLaTeX} verwendet eine Datenbank zu
+referenzieren. Dies hat den Vorteil, dass man leichter aus mehreren .tex-Dateien
+referenzieren kann.
+\lstinputlisting[caption={literatur.bib}]{literatur.bib}
+
+Die Verwendung ist allerdings aufwendiger als mit der
+\emph{thebibliography}-Umgebung.
+
+\section{Erstellen von Verzeichnissen}
+\begin{enumerate}
+	\item Das Paket \emph{biblatex} muss geladen werden.
+	\item Die Datenbankdatei musst angegeben werden
+		\begin{lstlisting}
+\addbibresource{literatur.bib}
+		\end{lstlisting}
+	\item Nun kann man mit \verb+\cite{greenwade93}+ zitieren.
+	\item Nun wird \LaTeX{} beim Kompilieren einen Fehler melden, das die Referenzen nicht bekannt sind. Daher sind folgende Schritte beim für ein erfolgreiches Kompilieren notwendig.
+		\begin{lstlisting}[language=sh]
+latex datei.tex
+biber datei.bcf || bibtex datei.aux
+latex datei.tex
+latex datei.tex
+begin
+		\end{lstlisting}
+\end{enumerate}
+
+\printbibliography
+
+\section{Hinweise}
+\subsection{Umbruch in URLs}
+{\bf ACHTUNG!} Folgendes schein nur mit \verb+pdflatex+ zu funktionieren, \cite{urlLineBreakWithBibLatex}.
+
+BibLaTex sollte automatisch einen Zeilenumbruch in URLs einfügen.
+Um das Umruchverhalten zu kontrollieren, liefert BibLaTex Zählvariablem mit:
+\begin{lstlisting}
+\setcounter{biburlnumpenalty}{7000}
+\setcounter{biburllcpenalty}{8000}
+\setcounter{biburlucpenalty}{9000}
+\end{lstlisting}
+
+Für weiter Informationen siehe \cite{manBibLaTeX}.
+
+\section{Werkzeuge}
+Ein Online-Literaturgenerator \cite{litGen}
+
+\printbibliography
+
+\end{document}
+
+
