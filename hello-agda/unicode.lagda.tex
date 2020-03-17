@@ -1,0 +1,18 @@
+\ignore{
+\begin{code}
+module unicode where
+
+open import IO
+open import Data.Bool
+\end{code}
+}
+
+\begin{code}
+if_☺_☹_ : {A : Set} -> Bool -> A -> A -> A
+if true ☺ x ☹ y = x
+if false ☺ x ☹ y = y
+
+main = if true
+  ☺ (run (putStrLn "Hallo, Welt!"))
+  ☹ (run (putStrLn "Hello, World!"))
+\end{code}

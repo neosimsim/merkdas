@@ -1,0 +1,3 @@
+[submodule "texfiles"]
+	path = texfiles
+	url = https://gitlab.com/neosimsim/texfiles.git

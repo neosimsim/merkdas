@@ -1,0 +1,55 @@
+#!/usr/bin/env stack
+-- stack --resolver lts-13.17 script --package shake --package directory --package containers
+import           Data.List
+import           Development.Shake
+import           Development.Shake.FilePath
+import           System.Directory
+import           System.Environment
+
+main :: IO ()
+main =
+  shakeArgs shakeOptions {shakeFiles = "_build"} $ do
+    want ["_build/type-level-programming.pdf"]
+    phony "clean" $ do
+      putNormal "Cleaning files in _build"
+      removeFilesAfter "_build" ["//*"]
+    "_build//*.pdf" %> pdfAction
+
+pdfAction :: FilePath -> Action ()
+pdfAction out = do
+  x <- liftIO $ firstM (sourceExists out . fst) pdfActionMap
+  case x of
+    Just (_, buildAction) -> buildAction out
+    Nothing               -> error $ "no rule to buld " ++ out
+  where
+    sourceExists :: FilePath -> String -> IO Bool
+    sourceExists out = doesPathExist . dropDirectory1 . replaceExtension out
+
+pdfActionMap = [("tex", texToPdf), ("dot", dotToPdf)]
+
+texToPdf :: String -> Action ()
+texToPdf out = do
+  let src = dropDirectory1 $ out -<.> "tex"
+  need $ src : texDependencies src
+  opt <- addEnv [("TEXINPUTS", "_build:.:")]
+  cmd opt "xelatex" "-output-directory=_build" [src]
+
+texDependencies :: FilePath -> [FilePath]
+texDependencies file = if file == "type-level-programming.tex"
+      then ["_build/logo.pdf", "_build/graph.pdf"]
+      else []
+
+dotToPdf :: String -> Action ()
+dotToPdf out = do
+  let src = dropDirectory1 $ out -<.> "dot"
+  need [src]
+  cmd "dot -Tpdf -o" [out, src]
+
+-- |return the first value from a list, if any, satisfying the given predicate.
+firstM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
+firstM _ [] = return Nothing
+firstM p (x:xs) = do
+  q <- p x
+  if q
+    then return (Just x)
+    else firstM p xs

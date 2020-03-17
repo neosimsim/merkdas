@@ -1,0 +1,6 @@
+keysym n = n N U2115
+keysym r = r R U211D
+keysym p = p P U2119
+keysym q = q Q U211A
+keysym z = z Z U2124
+keysym t = t T t U22A4

@@ -1,0 +1,339 @@
+\section{Natural Numbers}
+Now that we can write code in Agda, our next goal to understand why we
+want to write code in Agda, i. e. we want to write code that can’t be
+written in other languages. Not even in Haskell—well not yet, or at
+least not in an easy way.
+
+I mean of course the best feature a programming language can have
+\emph{Dependent Types}. The standard example for Dependent Types is the
+fix length vector. Don’t worry, if you don’t know what I mean by that
+you will soon.
+
+Before we can describe fix length vectors we have to be able to describe
+length. What better way to describe length but with natural numbers.
+
+\begin{code}
+module Naturals where
+
+data ℕ : Set where
+  zero : ℕ
+  suc  : ℕ → ℕ
+\end{code}
+
+What's that? This is an algebraic data type similar to those we wrote and use
+in Haskell all day long, or at least we would if we could use Haskell all day
+long at work.
+
+\begin{haskell}
+data Nat = Zero | Suc Nat
+\end{haskell}
+
+If we write the same with Haskells GADTs extension we see the resemblance:
+
+\begin{haskell}
+{-# LANGUAGE GADTs #-}
+
+data Nat where
+  Zero  :: Nat
+  Suc   :: Nat -> Nat
+\end{haskell}
+
+So far so good, but what about \verb+Set Whe state that \verb+Bool+ is of type
+\verb+Set+, which is the type of small types. In Haskell we would say of kind `*`.
+\verb+Set+ itself is of type \verb+Set1+ which is of type \verb+Set2+ and so on. In Haskell
+we would say nothing like this.
+
+\begin{haskell}
+{-# LANGUAGE GADTs          #-}
+{-# LANGUAGE KindSignatures #-}
+
+data Bool :: * where
+  Zero  :: Nat
+  Suc   :: Nat -> Nat
+\end{haskell}
+
+In other word being a Type in Haskell means being a Set in Agda.
+
+That's all we need, to describe every natural number possible.
+Quite cool when you think about it. No little-endian, no big-endian.
+
+Let's define some natural numbers:
+\begin{code}
+null : ℕ
+null = zero
+
+three : ℕ
+three = suc (suc (suc zero))
+\end{code}
+
+\begin{exercise}
+  Define \verb+fivethousand+.
+\end{exercise}
+
+GOTCHA!!!
+
+We can tell Agda to use Haskell builtin Integers as \verb+ℕ+.
+
+\begin{code}
+{-# BUILTIN NATURAL ℕ #-}
+
+fivethousand : ℕ
+fivethousand = 5000000
+\end{code}
+
+Let's define additions.
+\begin{code}
+infixl 6 _+_
+_+_ : ℕ → ℕ → ℕ
+\end{code}
+
+Using \verb+_+ in function names we define pre/in/mix/post-fix operators. The
+$n$-th arguments takes place of the $n$-th \verb+_+.
+\begin{code}
+zero + m = m
+suc n + m = suc (n + m)
+\end{code}
+
+Since we are all good programmers we want to test this function.
+We need some imports.
+\begin{code}
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_; refl; cong; sym)
+open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; _≡⟨_⟩_; _∎)
+\end{code}
+
+With this we can write a unit test for \verb=_+_=.
+\begin{code}
+_ : 2 + 3 ≡ 5
+_ = refl
+\end{code}
+For now (this little moment in time) you can think of \verb+refl+ as
+of an assertion.
+
+We can write the test in a more human readable form.
+\begin{code}
+_ : 2 + 3 ≡ 5
+_ =
+  begin
+    2 + 3
+  ≡⟨⟩
+    suc (1 + 3)
+  ≡⟨⟩
+    suc (suc (0 + 3))
+  ≡⟨⟩
+    suc (suc 3)
+  ≡⟨⟩
+    5
+  ∎
+\end{code}
+
+This is a lot to take in. First we notice that \verb=2 + 3 ≡ 5= is a type signature.
+And \verb+_≡_+ is a type constructor.
+\begin{verbatim}
+infix 4 _≡_
+data _≡_ {a} {A : Set a} (x : A) : A → Set a where
+  instance refl : x ≡ x
+\end{verbatim}
+\verb+x ≡ x+ is the type of elements which are equal to itself, hence \emph{reflexive}.
+
+So
+\begin{verbatim}
+_ : 2 + 3 ≡ 5
+\end{verbatim}
+defines a variable \verb+_+ containing the information that $2+3$ is equal to $5$.
+The variable name \verb+_+ states, that we don't care about the variable itself.
+
+\begin{verbatim}
+_ = refl
+\end{verbatim}
+tells Agda to construct an inhabitant of the type \verb=2 + 3 ≡ 5=, if it can
+we know they are equal.
+
+\begin{exercise}
+Write a test for $3+4$.
+\end{exercise}
+
+Unlike humans, Agda does not need every step. In fact everything Agda
+does is to check, that every expression between \verb+≡⟨⟩+ reduces to the
+same expression. Since Agda can reduce the expressions without further
+information we could just use \verb+refl+.
+
+\subsection{Proofs}
+With that in mind we could say that we did not just write a test $2+3$ but a proof.
+The cool thing is, that Agda verifies the proof at compile time, so no need to
+actually “run the test”.
+
+We just experienced the phenomenon of “Proposition as Types” — whooooo
+
+If course this proof is as useful as any other unit test … not at all.
+We test addition for 2 natural numbers this is a fraction of 0\,\%.
+
+We could use QuickCheck to run property test. But again 0\,\% coverage.
+
+In Agda we can do better but first we need some properties for addition to fulfill:
+\begin{itemize}
+  \item $0$ is the neutral element
+  \item assosiative
+  \item commutative
+\end{itemize}
+
+First we show that \verb+zero+ is the neutral element. We already
+know that \verb+zero+ is neutral rom the left by definition.
+\begin{code}
++-rightNeutral : ∀ (m : ℕ) → m + zero ≡ m
++-rightNeutral zero =
+  begin
+    zero + zero
+  ≡⟨⟩
+    zero
+  ∎
++-rightNeutral (suc m) =
+  begin
+    suc m + zero
+  ≡⟨⟩
+    suc (m + zero)
+  ≡⟨ cong  suc (+-rightNeutral m) ⟩ -- congruent
+    suc m
+  ∎
+\end{code}
+Agda makes it explicit that proof by induction is the same a programming
+with recursion.
+
+\begin{exercise}
+We defined \verb=_+_= left inductive. Proof that it \verb=_+_= is to right inductive, too.
+I. e. proof
+
+\begin{code}
++-suc : ∀ (m n : ℕ) → m + suc n ≡ suc (m + n)
+\end{code}
+\end{exercise}
+
+\begin{code}
++-suc zero n =
+  begin
+    zero + suc n
+  ≡⟨⟩
+    suc n
+  ≡⟨⟩
+    suc (zero + n)
+  ∎
++-suc (suc m) n =
+  begin
+    suc m + suc n
+  ≡⟨⟩
+    suc (m + suc n)
+  ≡⟨ cong suc (+-suc m n) ⟩
+    suc (suc (m + n))
+  ≡⟨⟩
+    suc (suc m + n)
+  ∎
+\end{code}
+
+Whit that lemma we can proof commutativity.
+\begin{code}
++-commutative : ∀ (n m : ℕ) → n + m ≡ m + n
++-commutative zero m =
+  begin
+    zero + m
+  ≡⟨⟩
+    m
+  ≡⟨ sym (+-rightNeutral m) ⟩
+    m + zero
+  ∎
++-commutative (suc n) m =
+  begin
+    suc n + m
+  ≡⟨⟩
+    suc (n + m)
+  ≡⟨ cong suc (sym (+-commutative m n)) ⟩
+    suc (m + n)
+  ≡⟨ sym (+-suc m n) ⟩
+    m + suc n
+  ∎
+\end{code}
+
+\begin{exercise}
+Show that $+$ is assosiative, i.e.
+
+\begin{code}
++-associativ : ∀ (l : ℕ) (m : ℕ) (n : ℕ)
+  → (l + m) + n ≡ l + (m + n)
+\end{code}
+\end{exercise}
+
+\begin{code}
++-associativ zero m n =
+  begin
+    (zero + m) + n
+  ≡⟨⟩
+    m + n
+  ≡⟨⟩
+    zero + (m + n)
+  ∎
++-associativ (suc l) m n =
+  begin
+    ((suc l) + m) + n
+  ≡⟨⟩
+    (suc (l + m)) + n
+  ≡⟨⟩
+    suc ((l + m) + n)
+  ≡⟨ cong suc (+-associativ l m n) ⟩ -- congruent
+    suc (l + (m + n))
+  ≡⟨⟩
+   suc l + (m + n)
+  ∎
+\end{code}
+
+Now we have tests for addition with 100\,\% coverage over the input domain,
+also called \emph{proofs}.
+
+Maybe we should stop here.
+
+\begin{code}
+infixl 7 _*_
+_*_ : ℕ → ℕ → ℕ
+zero * _ = zero
+suc m * n = n + (m * n)
+\end{code}
+
+\begin{exercise}
+Proof that $*$ distributive on $+$, .i.e.
+
+\begin{code}
+*-distributive : ∀ (l : ℕ) (m : ℕ) (n : ℕ)
+  → l * (m + n) ≡ l * m + l * n
+\end{code}
+\end{exercise}
+
+\begin{code}
+*-distributive zero m n =
+  begin
+    zero * (m + n)
+  ≡⟨⟩
+    zero
+  ≡⟨⟩
+    zero * zero
+  ≡⟨⟩
+    zero * m + zero * n
+  ∎
+*-distributive (suc l) m n =
+  begin
+    (suc l) * (m + n)
+  ≡⟨⟩
+    (m + n) + (l * (m + n))
+  ≡⟨ cong ((m + n) +_) (*-distributive l m n) ⟩
+    (m + n) + (l * m + l * n)
+  ≡⟨ +-associativ m n (l * m + l * n) ⟩
+    m + (n + (l * m + l * n))
+  ≡⟨ cong (m +_) (sym (+-associativ n (l * m) (l * n))) ⟩
+    m + ((n + l * m) + l * n)
+  ≡⟨ cong (m +_) (cong (_+ l * n) (+-commutative n (l * m))) ⟩
+    m + ((l * m + n) + l * n)
+  ≡⟨ cong (m +_) (+-associativ (l * m) n (l * n)) ⟩
+    m + (l * m + (n + l * n))
+  ≡⟨ sym (+-associativ  m (l * m) (n + l * n)) ⟩
+    (m + l * m) + (n + l * n)
+  ≡⟨⟩
+    suc l * m + suc l * n
+  ∎
+\end{code}

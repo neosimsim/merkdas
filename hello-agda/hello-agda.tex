@@ -1,0 +1,72 @@
+\documentclass[12pt]{article}
+
+\title{Hello Agda}
+\author{Alexander Ben Nasrallah}
+
+\usepackage{neosimsim}
+\usepackage{neosimsim-a4paper}
+
+\usepackage[backend=biber]{biblatex}
+\addbibresource{bibliography.bib}
+
+\usepackage{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
+
+\usepackage{fancyvrb}
+\newcommand{\ignore}[1]{}
+
+\newtheorem{exercise}{Exercise}
+
+\DefineVerbatimEnvironment%
+  {code}{Verbatim}
+  {} % Add fancy options here if you like.
+
+\DefineVerbatimEnvironment%
+  {neolisting}{Verbatim}
+  {frame=single} % Add fancy options here if you like.
+
+\DefineVerbatimEnvironment%
+  {haskell}{Verbatim}
+  {frame=single,label=\textrm{Haskell}}
+
+% https://tex.stackexchange.com/questions/18322/using-fancyvrb-verbatim-environment-from-within-newenvironment
+\usepackage{fancyvrb,caption,floatrow}
+\DeclareNewFloatType{neolistingfloat}{placement=t,fileext=neolisting,name=Listing}
+\captionsetup[neolistingfloat]{}
+
+\newenvironment{neocaplisting}[2]
+{\VerbatimEnvironment%
+ \captionof{neolistingfloat}{#2}\ifx\relax#1\relax\else\label{#1}\fi%
+\begin{Verbatim}[frame=single]}
+{\end{Verbatim}}
+
+\begin{document}
+\maketitle{}
+\begin{abstract}
+  These are notes on a workshop to introduce Agda, for the Berlin Haskell User Group.
+  This workshop should be done interactivly and possible limited to 2 hours
+  per session. I dont want to enforce the feeling of a real lecture.
+  This workshop is most of all meant to make fun.
+\end{abstract}
+
+\tableofcontents{}\newpage{}
+
+A few question to adjust the focus of the workshop.
+\begin{itemize}
+  \item Who has used Haskell before?
+  \item Who has used Agda before?
+  \item Who has used a dependent typed programming language before?
+  \item Who used a proof system before?
+\end{itemize}
+
+\input{installation.md}
+\input{hello-world.md}
+\input{src/Naturals.lagda}
+\input{Vector.lagda}
+
+\section{Coming From Haskell}
+\subsection{Unicode and Mixfix}
+\input{unicode.lagda.tex}
+
+\printbibliography{}
+\end{document}

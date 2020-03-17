@@ -1,0 +1,106 @@
+#!/usr/bin/env stack
+-- stack --resolver lts-14.6 script --package shake --package directory --package filemanip --ghc-options -Wall --ghc-options -Werror --ghc-options -rtsopts --ghc-options "-with-rtsopts=-I0 -N" --ghc-options -threaded
+import           Control.Monad
+import           Development.Shake
+import           Development.Shake.FilePath
+import           System.Exit
+import           System.FilePath.Find       (always, extension, find, (==?), (||?))
+import System.Directory (doesPathExist, withCurrentDirectory)
+
+main :: IO ()
+main =
+  shakeArgs shakeOptions {shakeFiles = "_build"} $ do
+    want ["pdf", "agda"]
+    phony "pdf" $ need ["_build/hello-agda.pdf"]
+    "_build/hello-agda.pdf" %> \out -> do
+      let src = out -<.> "tex.pdf"
+      need [src]
+      copyFileChanged src out
+    "_build//*.tex.pdf" %> \out -> do -- could be extracted: latexWithNeeds :: [FilePath] -> (FilePath -> Action ())
+      let src = (dropDirectory1 . dropExtension) out
+      let logFile = out -<.> "log"
+      need [src
+        , "bibliography.bib"
+        , "hello-world.agda"
+        , "unicode.lagda.tex"
+        , "_build/installation.md.tex"
+        , "_build/hello-world.md.tex"
+        , "src/Naturals.lagda.tex"
+        , "_build/Vector.lagda.tex"
+        , "_build/Bool.lagda.tex"]
+      latex src
+      (Exit grepBiberExit) <-
+        cmd "grep -q" ["Please (re)run Biber on the file:", logFile]
+      when (grepBiberExit == ExitSuccess) $ do
+        biber src -- TODO also run when bibliography changes
+        latex src
+      (Exit grepReferencesExit) <-
+        cmd
+          "grep -q"
+          ["LaTeX Warning: There were undefined references.", logFile]
+      when (grepReferencesExit == ExitSuccess) $ latex src
+    "_build//*.md.tex" %> \out -> do
+      let src = dropDirectory1 $ dropExtension out
+      need [src]
+      cmd "pandoc --filter pandoc-include-code -f markdown+raw_tex+raw_attribute -t latex-smart -o" [out] [src]
+    "_build//*.lagda.tex" %> \out -> do
+      let src = ("src" </>) . dropDirectory1 $ (-<.> "md") out
+      need [src]
+      cmd "pandoc --filter pandoc-include-code -f markdown+raw_tex+raw_attribute -t latex-smart -o" [out] [src]
+    phony "agda" $ do
+      agdaFiles <- liftIO $ find always (extension ==? ".agda") "src"
+      let agdaDests =
+            fmap
+              (("_build/MAlonzo/Code" </>) . dropDirectory1 . (-<.> "hs"))
+              agdaFiles
+      lagdaFiles <- liftIO $ find always (extension ==? ".tex" ||? extension ==? ".md") "src"
+      let lagdaDests =
+            fmap
+              (("_build/MAlonzo/Code" </>) . dropDirectory1 . (-<.> "hs") . dropExtension)
+              lagdaFiles
+      need $ agdaDests ++ lagdaDests
+    "_build/MAlonzo/Code//*.hs" %> \out -> do
+      src <- liftIO . withCurrentDirectory "src" $ firstFile
+        [dropDirectory1 . dropDirectory1 . dropDirectory1 $ out -<.> "agda"
+        , dropDirectory1 . dropDirectory1 . dropDirectory1 $ out -<.> "lagda.tex"
+        , dropDirectory1 . dropDirectory1 . dropDirectory1 $ out -<.> "lagda.md"]
+      need ["src" </> src]
+      command_
+        [AddPath [] [], Cwd "src"]
+        "../agda"
+        [ "--compile"
+        , "--no-main"
+        , "--ghc-dont-call-ghc"
+        , "--compile-dir"
+        , "../_build"
+        , src
+        ]
+    "_build/hello-world" %> \out -> do
+      let src = dropDirectory1 out <.> "agda"
+      need [src]
+      cmd "./agda --compile --compile-dir _build" [src]
+    "_build/unicode" %> \out -> do
+      let src = dropDirectory1 out <.> "lagda.tex"
+      need [src]
+      cmd "./agda --compile --compile-dir _build" [src]
+    phony "clean" $ do
+      putNormal "Clean files in _build"
+      removeFilesAfter "_build" ["//*"]
+      removeFilesAfter "." ["//*.agdai"]
+
+latex :: FilePath -> Action ()
+latex src = do
+  env <- addEnv [("TEXINPUTS", "_build:.:texfiles:")]
+  cmd_ env "xelatex -output-directory _build -jobname" [src] [src]
+
+biber :: String -> Action ()
+biber filename =
+  cmd_ "biber --input-directory _build --output-directory _build" [filename]
+
+firstFile :: [FilePath] -> IO FilePath
+firstFile [] = undefined
+firstFile (x:xs) = do
+  exist <- doesPathExist x
+  if exist
+    then return x
+    else firstFile xs

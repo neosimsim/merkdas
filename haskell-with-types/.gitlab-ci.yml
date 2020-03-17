@@ -1,0 +1,53 @@
+stages:
+- build
+
+variables:
+  STACK_ROOT: "$CI_PROJECT_DIR/.cache/stack"
+
+.stack: &stack_build
+  stage: build
+  script:
+  - stack --stack-yaml stack-build.yaml exec --package cabal-fmt -- cabal-fmt hello-types.cabal | diff hello-types.cabal -
+  - stack --stack-yaml stack-build.yaml exec --package hfmt -- hfmt
+  - stack build --pedantic
+  - stack test --pedantic
+  cache:
+    key: "$CI_JOB_NAME"
+    paths:
+    - .cache/stack
+
+stack-latest:
+  <<: *stack_build
+  image: fpco/stack-build-small:lts
+  allow_failure: true
+  script:
+  - stack --stack-yaml stack-build.yaml exec --package cabal-fmt cabal-fmt hello-types.cabal | diff hello-types.cabal -
+  - stack --stack-yaml stack-build.yaml exec --package hfmt hfmt
+  - stack --resolver lts build --pedantic
+  - stack --resolver lts test --pedantic
+
+stack-14.6:
+  <<: *stack_build
+  image: fpco/stack-build-small:lts-14.6
+  variables:
+    STACK_YAML: stack-lts-14.6.yaml
+
+.cabal: &cabal_job
+  stage: build
+  script:
+  - cabal v2-update
+  - cabal v2-build
+  - cabal v2-test test
+
+cabal-latest:
+  <<: *cabal_job
+  image: haskell:latest
+  allow_failure: true
+
+cabal-8.8.1:
+  <<: *cabal_job
+  image: haskell:8.8.1
+
+cabal-8.6.5:
+  <<: *cabal_job
+  image: haskell:8.6.5
