@@ -6,14 +6,14 @@ TEXFLAGS=-output-directory _build
 all: build pdf
 
 build:
-	stack build
+	cabal build
 
 pdf: hello-lenses.pdf
 
 hello-lenses.pdf: bibliography.bib
 
 run: build
-	stack run
+	cabal run
 
 .lhs.pdf:
 	mkdir -p _build
@@ -27,7 +27,7 @@ run: build
 	fi
 
 clean: phony
-	stack clean
+	cabal clean
 	rm -rf _build $(TEXOBJ)
 
 phony:

@@ -3,7 +3,6 @@
 *.bbl
 *.bcf
 *.blg
-*.cabal
 *.lock
 *.log
 *.mk
