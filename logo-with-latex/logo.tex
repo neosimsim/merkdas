@@ -1,0 +1,21 @@
+\documentclass{standalone}
+
+\usepackage{xcolor}
+\definecolor{neosimsim}{HTML}{C90000}
+
+\usepackage{tikz}
+\usetikzlibrary{fadings}
+
+\usepackage{fontspec}
+\setmainfont{FreeSans}
+
+\begin{document}
+
+\newcommand{\text}{{\color{neosimsim}neosimsim.}TALKS}
+
+\begin{tikzpicture}
+	\node[] (t) at (0,0) {\text{}};
+	\node[yscale=-1, scope fading=south, opacity=0.7, inner sep=0] at (t.south) {\text{}};
+\end{tikzpicture}
+
+\end{document}
