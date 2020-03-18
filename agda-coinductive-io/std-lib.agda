@@ -20,5 +20,13 @@ main3 = run $ do
   ♯ putStrLn "hallo"
   ♯ putStrLn "welt"
 
+
+main4 : Agda.Builtin.IO.IO ⊤
+main4 = run $ do
+  ♯ putStrLn "hallo"
+  ♯ (do
+    ♯ putStrLn "welt"
+    ♯ putStrLn "!")
+
 main : Agda.Builtin.IO.IO ⊤
 main = main3
