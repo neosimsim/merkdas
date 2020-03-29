@@ -1,0 +1,22 @@
+cabal-version:      >=1.10
+name:               make
+version:            0.1.0.0
+synopsis:           Build LaTeX documents with Shake
+description:        Build LaTeX documents with Shake.
+license:            BSD3
+license-file:       LICENSE
+author:             Alexander Ben Nasrallah
+maintainer:         me@abn.sh
+copyright:          2020 © Alexander Ben Nasrallah <me@abn.sh>
+category:           development
+build-type:         Simple
+extra-source-files: CHANGELOG.md
+
+executable make
+  main-is:          Make.hs
+  ghc-options:      -Wall -Werror -rtsopts -threaded "-with-rtsopts=-I0 -N"
+  build-depends:
+      base   >=4.9 && <5
+    , shake
+
+  default-language: Haskell2010

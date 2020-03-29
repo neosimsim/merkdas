@@ -1,0 +1,17 @@
+\documentclass[10pt]{article}
+
+\usepackage[backend=biber]{biblatex}
+\addbibresource{references.bib}
+
+\begin{document}
+\section{Intro}\label{sec:intro}
+This is a sample document, ment cover interesting usecases where a build could go wrong.
+
+For instance this documents use a biblatex and and bibliography file.
+If the build works properly the citation should be rendered correctly on the first run.
+See~\cite{shakebuild}?
+
+Here is the introduction~\ref{sec:intr}.
+
+\printbibliography
+\end{document}

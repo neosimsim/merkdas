@@ -1,0 +1,17 @@
+\documentclass[10pt]{article}
+
+\usepackage[backend=biber]{biblatex}
+% relative to the project root
+\addbibresource{nested/nested.bib}
+
+\begin{document}
+\section{Intro}\label{sec:intro}
+This is a nested document, i.e. inside another folder, and should work, too.
+
+Since this is a separate document, it needs to define it's own bibresources
+to make citation work. See~\cite{shakebuild}?
+
+Here is the introduction~\ref{sec:intr}.
+
+\printbibliography
+\end{document}

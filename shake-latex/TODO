@@ -1,0 +1,6 @@
+-	pass needed files like bibliographies or input files.
+
+	Could be done by environments
+
+	-	`TEXFILES`
+	-	`BIBLIOGRAPHIES`
