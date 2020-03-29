@@ -1,0 +1,457 @@
+\begin{code}
+module part1.Naturals where
+
+data ℕ : Set where
+  zero : ℕ
+  suc  : ℕ → ℕ
+\end{code}
+
+\begin{code}
+{-# BUILTIN NATURAL ℕ #-}
+\end{code}
+
+\begin{code}
+import Relation.Binary.PropositionalEquality as Eq
+open Eq using (_≡_; refl; cong; sym)
+open Eq.≡-Reasoning -- using (begin_; _≡⟨⟩_; _≡⟨_⟩_; _∎)
+\end{code}
+With Agda 2.6.1 we need agda-stdlib v1.3. Unfortunately the definition of \verb+_≡⟨_⟩_+
+has changed in with the agda-stdlib v1.3 effect, that we cannot use, hide or rename the operator
+anymore~\cite{agda-stdlib-1.3-changelog-reasoning}.
+
+\begin{code}
+_+_ : ℕ → ℕ → ℕ
+zero  + n = n
+suc m + n = suc (m + n)
+\end{code}
+
+With Agda we can write unit tests, which are evaluated and compile time.
+\begin{code}
+_ : 2 + 3 ≡ 5
+_ = refl
+\end{code}
+
+\begin{code}
+_*_ : ℕ → ℕ → ℕ
+zero    * m = zero
+(suc m) * n = n + (m * n)
+
+_ : 3 * 2 ≡ 6
+_ = refl
+\end{code}
+
+\begin{code}
+_∸_ : ℕ → ℕ → ℕ
+m     ∸ zero   =  m
+zero  ∸ suc n  =  zero
+suc m ∸ suc n  =  m ∸ n
+
+infixl 6  _+_  _∸_
+infixl 7  _*_
+
+{-# BUILTIN NATPLUS _+_ #-}
+{-# BUILTIN NATTIMES _*_ #-}
+{-# BUILTIN NATMINUS _∸_ #-}
+\end{code}
+
+We also provide a data type for binary representation of natural numbers.
+\begin{code}
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩ = ⟨⟩ I
+inc (b O) = b I
+inc (b I) = (inc b) O
+\end{code}
+
+A unit test for \verb+inc+
+\begin{code}
+_ : inc (⟨⟩ I O I I) ≡ ⟨⟩ I I O O
+_ = refl
+\end{code}
+
+Since \verb_Bin_ is a representation of natural numbers, we should provide
+a way to convert back and forth.
+\begin{code}
+to : ℕ → Bin
+to zero = ⟨⟩ O
+to (suc n) = inc (to n)
+
+from : Bin → ℕ
+from ⟨⟩ = 0
+from (⟨⟩ O) = 0
+from (b O) = from b + from b
+from (b I) = suc (from b + from b)
+\end{code}
+
+Some unit tests for \verb+to+ and \verb+from+:
+\begin{code}
+_ : from ⟨⟩ ≡ 0
+_ = refl
+
+_ : from (⟨⟩ O) ≡ 0
+_ = refl
+
+_ : from (⟨⟩ O O O) ≡ 0
+_ = refl
+
+_ : from (⟨⟩ I O I) ≡ 5
+_ = refl
+
+_ : from (⟨⟩ O O I O I) ≡ 5
+_ = refl
+
+_ : to 8 ≡ (⟨⟩ I O O O)
+_ = refl
+
+_ : to 8 ≡ (⟨⟩ I O O O)
+_ = refl
+\end{code}
+
+\begin{code}
+data Singleton {a} {A : Set a} (x : A) : Set a where
+  _with≡_ : (y : A) → x ≡ y → Singleton x
+
+inspect : ∀ {a} {A : Set a} (x : A) → Singleton x
+inspect x = x with≡ refl
+
+lemma-bin-shift : ∀ b → from (b O) ≡ from b + from b
+lemma-bin-shift ⟨⟩ = refl
+lemma-bin-shift (b O) rewrite lemma-bin-shift b = refl
+lemma-bin-shift (b I) rewrite lemma-bin-shift b = refl
+
+-- TODO needed?
+postulate lemma-bin-inc-I : ∀ b → inc (b I) ≡ (inc b) O
+\end{code}
+
+It should be noted, that we have to explicitly apply symmetry of reflexivity:
+\begin{code}
+lemma-bin-shift' : forall b → from b + from b ≡ from (b O)
+lemma-bin-shift' b =
+  begin
+    from b + from b
+  ≡⟨ sym (lemma-bin-shift b) ⟩
+   from (b O)
+  ∎
+
+lemma-bin-suc-inc : ∀ b → from (inc b) ≡ suc (from b)
+lemma-bin-suc-inc ⟨⟩ =
+  begin
+    from (inc ⟨⟩)
+  ≡⟨⟩
+    from (⟨⟩ I)
+  ≡⟨⟩
+    1
+  ≡⟨⟩
+    suc 0
+  ≡⟨⟩
+    suc (from ⟨⟩)
+  ∎
+lemma-bin-suc-inc (b O) rewrite lemma-bin-shift b = refl
+lemma-bin-suc-inc (b I) = -- rewrite (lemma-bin-suc-inc (b O)) | sym (lemma-bin-shift b)  = ?
+  begin
+    from (inc (b I))
+  ≡⟨⟩
+    from ((inc b) O)
+  ≡⟨⟩
+    from (inc (inc (b O)))
+  ≡⟨ lemma-bin-suc-inc (inc (b O)) ⟩
+    suc (from (inc (b O)))
+  ≡⟨ cong suc (lemma-bin-suc-inc (b O)) ⟩
+    suc (suc (from (b O)))
+  ≡⟨ cong suc (cong suc (lemma-bin-shift b)) ⟩
+    suc (from (b I))
+  ∎
+{-
+lemma-bin-suc-inc (b I) =
+  begin
+    from (inc (b I))
+  ≡⟨ cong from (lemma-bin-inc-I b) ⟩
+    from ((inc b) O)
+  ≡⟨ cong from (lemma-bin-inc-I b) ⟩
+    from (inc (b O))
+  ≡⟨⟩
+   from (inc b) + from (inc b)
+  ≡⟨ cong (_+_) (lemma-bin-suc-inc b)⟩
+   suc (from b) + suc (from b)
+  ≡⟨⟩
+   suc (from (b I))
+  ∎
+-}
+\end{code}
+
+To get some intuition for how to use \verb+rewrite+ I player a bit in the \verb+b I+ case.
+\begin{verbatim}
+lemma-bin-suc-inc : ∀ b → from (inc b) ≡ suc (from b)
+\end{verbatim}
+
+\begin{description}
+\item[No rewrite] \verb+lemma-bin-suc-inc (b I) = ?+
+
+\begin{description}
+\item[Goal Type] \verb_from (inc b O) ≡ suc (suc (from b + from b))_
+
+Let us derive the goal type manually:
+\begin{code}
+module _ where
+  private
+    LHS : ∀ b → from (inc (b I)) ≡ from ((inc b) O)
+    LHS b =
+      begin
+        from ((inc b) O)
+      ≡⟨⟩
+        from ((inc b) O)
+      ∎
+
+    RHS : ∀ b → suc (from (b I)) ≡ suc (suc (from b + from b))
+    RHS b =
+      begin
+        suc (from (b I))
+      ≡⟨⟩
+        suc (suc (from b + from b))
+      ∎
+\end{code}
+or
+\begin{code}
+module _ where
+  private
+    LHS : forall b → from (inc (b I)) ≡ from ((inc b) O)
+    LHS b = refl
+
+    RHS : forall b → suc (from (b I)) ≡ suc (suc (from b + from b))
+    RHS b = refl
+\end{code}
+If we can just apply \verb+refl+ we don’t have rewrite anything.
+I guess this is what Agda does when inferring the goal type.
+\end{description}
+
+\item[Shift $b$] \verb+lemma-bin-suc-inc (b I) rewrite lemma-bin-shift b = ?+
+
+\begin{description}
+\item[Goal Type] \verb_from (inc b O) ≡ suc (suc (from b + from b))_
+\end{description}
+
+\item[Induction on $b$] \verb+lemma-bin-suc-inc (b I) rewrite lemma-bin-suc-inc b = ?+
+
+\begin{description}
+\item[Goal Type] \verb_from (inc b O) ≡ suc (suc (from b + from b))_
+\end{description}
+
+\item[Symmetry of Shift] \verb+lemma-bin-suc-inc (b I) rewrite sym (lemma-bin-shift b) = ?+
+
+\begin{description}
+\item[Goal Type] \verb_from (inc b O) ≡ suc (suc (from (b O)))_
+\end{description}
+
+\begin{code}
+module _ where
+  private
+    RHS : forall b → suc (from (b I)) ≡ suc (suc (from (b O)))
+    RHS b =
+      begin
+        suc (from (b I))
+      ≡⟨⟩
+        suc (suc (from b + from b))
+      ≡⟨ cong suc (cong suc (sym (lemma-bin-shift b))) ⟩
+        suc (suc (from (b O)))
+      ∎
+\end{code}
+Or by using \verb_rewrite_.
+\begin{code}
+module _ where
+  private
+    RHS : forall b → suc (from (b I)) ≡ suc (suc (from (b O)))
+    RHS b rewrite lemma-bin-shift b = refl
+\end{code}
+
+\item[Induction on $b~0$] \verb+lemma-bin-suc-inc (b I) rewrite lemma-bin-suc-inc (b O) = ?+
+\begin{description}
+\item[Goal Type] \verb_from (inc b O) ≡ suc (suc (from (b O)))_
+\end{description}
+
+Interestingly by applying/assuming
+\begin{verbatim}
+lemma-bin-suc-inc (b O) : from (inc (b O)) ≡ suc (from (b O))
+\end{verbatim}
+We can reduce the RHS even further, like it would imply symmetry:
+
+\begin{description}
+\item[Q] Why is this the same as \verb_sym_? / Why does `lemma-bin-suc-inc (b O)` imply symmetry?
+\item[A] This means we assume/apply
+
+\begin{verbatim}
+lemma-bin-suc-inc (b O) : from (inc (b O)) ≡ suc (from (b O))
+    <=>  from (b I) ≡ suc (from (b O))
+    <=>  from (b I) ≡ suc (from b + from b)
+
+RHS
+= suc (from (b I))
+= suc (from (inc (b O)))
+= suc (suc (from (b O)))
+\end{verbatim}
+\end{description}
+
+Here is what the argumentation whould look like in Agda:
+\begin{code}
+module _ where
+  private
+    remark : ∀ b → from (inc (b O)) ≡ suc (from (b O))
+                 → suc (from (b I)) ≡ suc (suc (from (b O)))
+    remark b prf =
+      begin
+        suc (from (b I))
+      ≡⟨⟩
+        suc (from (inc (b O)))
+      ≡⟨ cong suc prf ⟩
+        suc (suc (from (b O)))
+      ∎
+\end{code}
+\end{description}
+
+\begin{code}
++-assoc : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
++-assoc zero n p =
+  begin
+    (zero + n) + p
+  ≡⟨⟩
+    n + p
+  ≡⟨⟩
+    zero + (n + p)
+  ∎
++-assoc (suc m) n p =
+  begin
+    (suc m + n) + p
+  ≡⟨⟩
+    suc (m + n) + p
+  ≡⟨⟩
+    suc ((m + n) + p)
+  ≡⟨ cong suc (+-assoc m n p) ⟩
+    suc (m + (n + p))
+  ≡⟨⟩
+    suc m + (n + p)
+  ∎
+\end{code}
+
+Here is a list of rewrite usage and their effects:
+\begin{code}
++-assoc? : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
++-assoc? zero    n p = refl
++-assoc? (suc m) n p = {! suc (m + n + p) ≡ suc (m + (n + p)) !}
+\end{code}
+
+We can rewrite the left handsite of the goal type using induction:
+\begin{code}
++-assoc′ : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
++-assoc′ zero    n p                        = refl
++-assoc′ (suc m) n p rewrite +-assoc′ m n p = {! suc (m + (n + p)) ≡ suc (m + (n + p)) !}
+\end{code}
+
+We can rewrite the right handsite of the goal type using induction symmetrically:
+\begin{code}
++-assoc″ : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
++-assoc″ zero    n p                              = refl
++-assoc″ (suc m) n p rewrite sym (+-assoc″ m n p) = {! suc (m + n + p) ≡ suc (m + n + p) !}
+\end{code}
+
+We can also rewrite the goal twice, one time by induction and then by symmetric induction.
+We can see that rewrite works from left to right:
+\begin{code}
++-assoc‴ : ∀ (m n p : ℕ) → (m + n) + p ≡ m + (n + p)
++-assoc‴ zero    n p                                               = refl
++-assoc‴ (suc m) n p rewrite +-assoc‴ m n p | sym (+-assoc‴ m n p) = {! suc (m + n + p) ≡ suc (m + n + p) !}
+\end{code}
+
+\begin{code}
++-suc : ∀ (m n : ℕ) → m + suc n ≡ suc (m + n)
++-suc zero n =
+  begin
+    zero + suc n
+  ≡⟨⟩
+    suc n
+  ≡⟨⟩
+    suc (zero + n)
+  ∎
++-suc (suc m) n =
+  begin
+    suc m + suc n
+  ≡⟨⟩
+    suc (m + suc n)
+  ≡⟨ cong suc (+-suc m n) ⟩
+    suc (suc (m + n))
+  ≡⟨⟩
+    suc (suc m + n)
+  ∎
+
++-suc′ : ∀ (m n : ℕ) → m + suc n ≡ suc (m + n)
++-suc′ zero n = refl
++-suc′ (suc m) n rewrite +-suc′ m n = refl
+
++-suc″ : ∀ (m n : ℕ) → m + suc n ≡ suc (m + n)
++-suc″ zero n = refl
++-suc″ (suc m) n with m + suc n    | +-suc″ m n
+...                 | suc .(m + n) | refl = refl
+
++-identityʳ : ∀ (m : ℕ) → m + zero ≡ m
++-identityʳ zero =
+  begin
+    zero + zero
+  ≡⟨⟩
+    zero
+  ∎
++-identityʳ (suc m) =
+  begin
+    suc m + zero
+  ≡⟨⟩
+    suc (m + zero)
+  ≡⟨ cong suc (+-identityʳ m) ⟩
+    suc m
+  ∎
+
++-identity′ : ∀ (n : ℕ) → n + zero ≡ n
++-identity′ zero = refl
++-identity′ (suc n) rewrite +-identity′ n = refl
+
++-comm : ∀ (m n : ℕ) → m + n ≡ n + m
++-comm m zero =
+  begin
+    m + zero
+  ≡⟨ +-identityʳ m ⟩
+    m
+  ≡⟨⟩
+    zero + m
+  ∎
++-comm m (suc n) =
+  begin
+    m + suc n
+  ≡⟨ +-suc m n ⟩
+    suc (m + n)
+  ≡⟨ cong suc (+-comm m n) ⟩
+    suc (n + m)
+  ≡⟨⟩
+    suc n + m
+  ∎
+
++-comm′ : ∀ (m n : ℕ) → m + n ≡ n + m
++-comm′ m zero rewrite +-identityʳ m = refl
++-comm′ m (suc n) rewrite +-suc m n | +-comm′ m n = refl
+
+
+inv-from-to : ∀ n → from (to n) ≡ n
+inv-from-to zero = refl
+inv-from-to (suc n) =
+  begin
+    from (to (suc n))
+  ≡⟨⟩
+    from (inc (to n))
+  ≡⟨ lemma-bin-suc-inc (to n) ⟩
+    suc (from (to n))
+  ≡⟨ cong suc (inv-from-to n) ⟩
+    suc n
+  ∎
+
+inv-to-from : ∀ b → from (to b) ≡ b
+inv-to-from b = ?
+\end{code}
