@@ -1,3 +1,0 @@
-filter_settings "mathjaxnode" {
-  options="--output SVG"
-}
