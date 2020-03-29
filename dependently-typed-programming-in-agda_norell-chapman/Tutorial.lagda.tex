@@ -1,0 +1,563 @@
+\begin{code}
+module Tutorial where
+
+data Bool : Set where
+  true : Bool
+  false : Bool
+
+not : Bool → Bool
+not true = false
+not false = true
+
+data ℕ : Set where
+  zero : ℕ
+  suc : ℕ → ℕ
+
+_+_ : ℕ → ℕ → ℕ
+zero + n = n
+suc m + n = suc (m + n)
+
+_*_ : ℕ → ℕ → ℕ
+zero * _ = zero
+suc m * n = m + (m * n)
+
+_or_ : Bool → Bool → Bool
+true or _ = true
+fals or b = b
+
+if_then_else_ : {A : Set} → Bool → A → A → A
+if true then x else _ = x
+if false then _ else y = y
+
+infixl 60 _*_
+infixl 40 _+_
+infixr 20 _or_
+infix 5 if_then_else_
+
+infixr 50 _::_
+data List (A : Set) : Set where
+  [] : List A
+  _::_ : A → List A → List A
+
+identity : (A : Set) → A → A
+identity _ x = x
+
+zero' : ℕ
+zero' = identity ℕ zero
+
+apply : (A : Set)(B : A → Set) → ((x : A) → B x) → (a : A) → B a
+apply A B f a = f a
+
+apply' : {A : Set}{B : A → Set} → ((x : A) → B x) → (a : A) → B a
+apply' f a = f a
+
+id : {A : Set} → A → A
+id x = x
+
+true' : Bool
+true' = id true
+\end{code}
+
+Agda does not check, that implicit arguments make sense:
+\begin{code}
+silly : {A : Set}{x : A} → A
+silly {_}{x} = x
+
+false' : Bool
+false' = silly {x = false}
+\end{code}
+
+We can also pass explicit argument implicitly by passing \verb+_+:
+\begin{code}
+one : ℕ
+one = identity _ (suc zero)
+\end{code}
+
+Fully dependent function composition:
+\begin{code}
+_◦_ : {A : Set}{B : A → Set}{C : (x : A) → B x → Set}
+  → (f : {x : A}(y : B x) → C x y)
+  → (g : (x : A) → B x)
+  → ((x : A) → C x (g x))
+(f ◦ g) x = f (g x)
+\end{code}
+
+\begin{code}
+-- no need to declare the type of plus-two
+plus-two = suc ◦ suc
+
+map : {A B : Set} → (A → B) → List A → List B
+map f        [] = []
+map f (x :: xs) = f x :: map f xs
+
+_++_ : {A : Set} → List A → List A → List A
+[]        ++ ys = ys
+(x :: xs) ++ ys = x :: (xs ++ ys)
+
+data Vec (A : Set) : ℕ → Set where
+  [] : Vec A zero
+  _::_ : {n : ℕ} → A → Vec A n → Vec A (suc n)
+
+head : {A : Set}{n : ℕ} → Vec A (suc n) → A
+head (x :: _) = x
+
+vmap : {A B : Set}{n : ℕ} → (A → B) → Vec A n → Vec B n
+vmap _        [] = []
+vmap f (x :: xs) = f x :: vmap f xs
+
+data Vec₂ (A : Set) : ℕ → Set where
+  [] : Vec₂ A zero
+  cons : (n : ℕ) → A → Vec₂ A n → Vec₂ A (suc n)
+
+vmap₂ : {A B : Set}(n : ℕ) → (A → B) → Vec₂ A n → Vec₂ B n
+vmap₂ .zero f [] = []
+vmap₂ .(suc n) f (cons n x xs) = cons n (f x) (vmap₂ n f xs)
+
+data Image_∋_ {A B : Set}(f : A → B) : B → Set where
+  im : (x : A) → Image f ∋ f x
+
+inv : {A B : Set}(f : A → B)(y : B) → Image f ∋ y → A
+inv f .(f x) (im x) = x
+
+data Fin : ℕ → Set where
+  fzero : {n : ℕ} → Fin (suc n)
+  fsuc : {n : ℕ} → Fin n → Fin (suc n)
+
+-- We have three possible ways to construct a value of Type Fin 3
+fzero3 : Fin (suc (suc (suc zero)))
+fzero3 = fzero {suc (suc (zero))}
+
+fsuc3 : Fin (suc (suc (suc zero)))
+fsuc3 = fsuc {suc (suc (zero))} fzero
+
+fsucsuc3 : Fin (suc (suc (suc zero)))
+fsucsuc3 = fsuc {suc (suc (zero))} (fsuc fzero)
+\end{code}
+
+\subsection{Interpretation of Fin}
+\begin{equation*}
+\text{Fin}(n) ≔ \{ i ∈ ℕ ~|~ i < n \}
+\end{equation*}
+
+Axiom-fzero: For every $n ∈ ℕ$ \verb+zero+ is smaller than \verb+suc n+, i. e.
+
+\begin{equation*}
+0 ∈ \text{Fin}(n) \quad ∀ n ∈ ℕ.
+\end{equation*}
+
+Axiom-fsuc: For every $n ∈ ℕ$ and $i ∈ \text{Fin}(n)$ $\text{suc}(i) ∈ \text{Fin}(\text{suc}(n))$
+
+\begin{itemize}
+  \item No way to construct \verb+Fin zero+.
+  \item One way to construct \verb+Fin (suc zero)+ by applying \verb+fzero+.
+    To apply \verb+fsuc+, we would neet \verb+Fin zero+.
+  \item With \verb+fsuc+ we can construct \verb+Fin (suc n)+ for every inhabitant
+    of \verb+Fin n+, i. e. \verb+Fin (suc n)+ as the same number of inhabitants than
+    \verb+Fin n+ plus 1 by applying \verb+fzero+.
+\end{itemize}
+
+Therefore \verb+Fin n+ is isomorphic to $\{ i ∈ ℕ ~|~ i < n \}$
+
+\begin{code}
+magic : {A : Set} → Fin zero → A
+magic ()
+
+magic₂ : Fin zero → ℕ
+magic₂ ()
+
+magic₃ : Fin zero → ℕ
+magic₃ x = zero
+
+data Empty : Set where
+  empty : Fin zero → Empty
+
+magic' : {A : Set} → Empty → A
+magic' (empty ())
+-- magic' () not accepted
+\end{code}
+
+We give an (absurd) pattern to \verb+magic+ because is it type correct
+to write \verb+magic x+. Compare to \verb+head+ where it is not
+norrect to write \verb+head []+, because \verb+zero+ is not a \verb+suc n+.
+
+It is important to note that an absurd pattern can only be used if
+there is no valid constructor pattern for the argument. It is not enought
+that there are no closed inhabitants of the type, sinced checking
+type inhabitation is undecidable. This is why we cannot use absurd pattern
+matching on \verb+magic'+, since \verb+empty+ is a vadlid constructor. However
+the argument to \verb+empty+ is absurd.
+
+\begin{code}
+_!_ : {A : Set}{n : ℕ} → Vec A n → Fin n → A
+(x :: _) ! fzero = x
+(x :: xs) ! fsuc i = xs ! i
+
+tabulate : {A : Set}{n : ℕ} → (Fin n → A) → Vec A n
+tabulate {_} {zero} f = []
+tabulate {_} {suc n} f = f fzero :: tabulate (f ◦ fsuc)
+\end{code}
+
+\subsection{Programs as Proofs}
+
+\begin{code}
+data False : Set where
+record True : Set where
+
+trivial : True
+trivial = _
+
+trivial' : True
+trivial' = record{}
+
+isTrue : Bool → Set
+isTrue true = True
+isTrue false = False
+
+isFalse : Bool → Set
+isFalse true = False
+isFalse false = True
+
+_<?_ : ℕ → ℕ → Bool
+_     <?  zero = false
+zero  <? suc n = true
+suc m <? suc n = m <? n
+
+length : {A : Set} → List A → ℕ
+length [] = zero
+length (x :: xs) = suc (length xs)
+
+lookup : {A : Set}(xs : List A)(n : ℕ)
+  → .(isTrue (n <? length xs))
+  → A
+lookup (x :: xs) zero p = x
+lookup (x :: xs) (suc n) p = lookup xs n p
+
+boolList : List Bool
+boolList = true :: false :: false :: []
+
+false'' : Bool
+false'' = lookup boolList (suc (suc zero)) _
+
+data _≡_ {A : Set}(x : A) : A → Set where
+  refl : x ≡ x
+
+_ : false'' ≡ false
+_ = refl
+
+data _≤_ : ℕ → ℕ → Set where
+  ≤-zero : {n : ℕ} → zero ≤ n
+  ≤-suc  : {m n : ℕ} → m ≤ n → suc m ≤ suc n
+  
+{-# BUILTIN NATURAL ℕ #-}
+
+1≤2 : 1 ≤ 2
+1≤2 = ≤-suc (≤-zero {1})
+
+≤-trans : {l m n : ℕ} → l ≤ m → m ≤ n → l ≤ n
+≤-trans ≤-zero _ = ≤-zero
+≤-trans (≤-suc p) (≤-suc q) = ≤-suc (≤-trans p q)
+
+_<_ :  ℕ → ℕ → Set
+m < n = (suc m) ≤ n
+
+lookup' : {A : Set}(xs : List A)(n : ℕ)
+  → n < length xs
+  → A
+lookup' (x :: xs) zero _ = x
+lookup' (x :: xs) (suc n) (≤-suc p) = lookup' xs n p
+
+min : ℕ → ℕ → ℕ
+min x y with x <? y
+min x y | true = x
+min x y | false = y
+
+-- TODO write in with _<_
+
+filter : {A : Set} → (A → Bool) → List A → List A
+filter p [] = []
+filter p (x :: xs) with p x
+... | true = x :: filter p xs
+... | false = filter p xs
+
+≤-lemma₁ : ∀ {m} → m ≤ suc m
+≤-lemma₁ {zero} = ≤-zero
+≤-lemma₁ {suc m} = ≤-suc (≤-lemma₁ {m})
+
+-- m ≤ suc m && suc m ≤ suc n ⇒{trans} m ≤ suc n
+≤-lemma₂ : ∀ {m n} → m ≤ n → m ≤ suc n
+≤-lemma₂ p = ≤-trans ≤-lemma₁ (≤-suc p)
+
+filter-shorter : {A : Set}(xs : List A)(p : A → Bool) → length (filter p xs) ≤ length xs
+filter-shorter []        p = ≤-zero
+filter-shorter (x :: xs) p with p x
+... | true = ≤-suc (filter-shorter xs p)
+... | false = ≤-lemma₂ (filter-shorter xs p)
+
+data _≠_ : ℕ → ℕ → Set where
+  z≠s : {n : ℕ} → zero ≠ suc n
+  s≠z : {n : ℕ} → suc n ≠ zero
+  s≠s : {m n : ℕ} → m ≠ n → suc m ≠ suc n
+
+data Equal? (n m : ℕ) : Set where
+  eq : n ≡ m → Equal? n m
+  neq : n ≠ m → Equal? n m
+
+equal? : (n m : ℕ) → Equal? n m
+equal? zero zero = eq refl
+equal? zero (suc m) = neq z≠s
+equal? (suc n) zero = neq s≠z
+equal? (suc n) (suc m) with equal? n m
+equal? (suc n) (suc .n) | eq refl = eq refl
+equal? (suc n) (suc m)  | neq p = neq (s≠s p)
+
+infix 20 _⊆_
+data _⊆_ {A : Set}: List A → List A → Set where
+  []⊆[] : [] ⊆ []
+  xs⊆x::xs : {y : A} {xs ys : List A} → xs ⊆ ys → xs ⊆ y :: ys
+  xs⊆xs : ∀ {x xs ys} → xs ⊆ ys → x :: xs ⊆ x :: ys
+
+filter-sublist : {A : Set}
+  → (p : A → Bool)
+  → (xs : List A)
+  → filter p xs ⊆ xs 
+filter-sublist _ [] = []⊆[]
+filter-sublist p (x :: xs) with p x
+... | true = xs⊆xs (filter-sublist p xs)
+... | false = xs⊆x::xs (filter-sublist p xs)
+
+lem-plus-zero : (n : ℕ) → n + zero ≡ n
+lem-plus-zero zero = refl
+lem-plus-zero (suc n) with n + zero | lem-plus-zero n
+... | .n | refl = refl
+\end{code}
+
+\subsection{Modules}
+
+\begin{code}
+module M where
+  data Maybe (A : Set) : Set where
+    nothing : Maybe A
+    just    : A → Maybe A
+
+  maybe : {A B : Set} → B → (A → B) → Maybe A → B
+  maybe z _ nothing  = z
+  maybe _ f (just x) = f x
+
+module A where
+  private
+    internal : ℕ
+    internal = zero
+
+  exported : ℕ → ℕ
+  exported n = n + internal
+
+
+mapMaybe₁ : {A B : Set} → (A → B) → M.Maybe A → M.Maybe B
+mapMaybe₁ _ M.nothing = M.nothing
+mapMaybe₁ f (M.just x) = M.just (f x)
+
+mapMaybe₂ : {A B : Set} → (A → B) → M.Maybe A → M.Maybe B
+mapMaybe₂ f m = let open M in maybe nothing (just ◦ f) m
+
+open M
+
+mapMaybe₃ : {A B : Set} → (A → B) → Maybe A → Maybe B
+mapMaybe₃ f m = maybe nothing (just ◦ f) m
+
+module Sort (A : Set)(_<_ : A → A → Bool) where
+  insert : A → List A → List A
+  insert y [] = y :: []
+  insert y (x :: xs) with x < y
+  ... | true = x :: insert y xs
+  ... | false = y :: x :: xs
+
+  sort : List A -> List A
+  sort [] = []
+  sort (x :: xs) = insert x (sort xs)
+
+sort₁ : (A : Set)(_<_ : A → A → Bool) → List A → List A
+sort₁ = Sort.sort
+
+module Sortℕ = Sort ℕ _<?_
+
+sort₂ : List ℕ → List ℕ
+sort₂ = Sortℕ.sort
+
+-- we don't have to assign a name if we open the module
+open Sort ℕ _<?_ renaming (insert to insertℕ; sort to sortℕ)
+\end{code}
+
+Reexport:
+\begin{code}
+module Lists (A : Set)(_<_ : A → A → Bool) where
+  open Sort A _<_ public
+  minimum : List A → Maybe A
+  minimum xs with sort xs
+  ... | []      = nothing
+  ... | y :: ys = just y
+\end{code}
+
+Before we apply module parameters to external modules we
+have to import them first.
+\begin{code}
+import Sort as S
+module Sortℕ' = S ℕ _<_
+\end{code}
+
+\begin{code}
+import Logic using (_∧_; _∨_)
+\end{code}
+
+\subsection{Records}
+\begin{code}
+record Point : Set where
+  field x : ℕ
+        y : ℕ
+
+mkPoint : ℕ → ℕ → Point
+mkPoint x y = record{x = x; y = y}
+
+getX : Point → ℕ
+getX = Point.x
+\end{code}
+
+This gives us a \emph{parameterized} module
+\begin{verbatim}
+module Point (p : Point) where
+  x : ℕ
+  y : ℕ
+\end{verbatim}
+
+\begin{code}
+abs² : Point → ℕ
+abs² p = let open Point p in x * x + y * y
+\end{code}
+
+It is possible to add function to the module of a record by
+including the in the scopte of the record declaration.
+
+\begin{code}
+record Monad (M : Set → Set) : Set1 where
+  field
+    return : {A : Set} → A → M A
+    _>>=_ : {A B : Set} → M A → (A → M B) → M B
+
+  mapM : {A B : Set} → (A → M B) → List A → M (List B)
+  mapM f [] = return []
+  mapM f (x :: xs) = f x >>= \y →
+                     mapM f xs >>= \ys →
+                     return (y :: ys)
+
+mapM' : {M : Set → Set} → Monad M →
+        {A B : Set} → (A → M B) → List A → M (List B)
+mapM' m f xs = Monad.mapM m f xs
+
+myMonadInstanceOfMaybe : Monad Maybe
+myMonadInstanceOfMaybe = record {
+    return = just;
+    _>>=_ = λ { nothing _ → nothing  ; (just x) f → f x }
+  }
+
+mapM'' : {A B : Set} → (A → Maybe B) → List A → Maybe (List B)
+mapM'' = mapM' myMonadInstanceOfMaybe
+
+open Monad {{...}}
+pure : {M : Set → Set} {{_ : Monad M}}{A : Set} → A → M A
+pure = return
+
+instance
+  MonadMaybe : Monad Maybe
+  return ⦃ MonadMaybe ⦄ = just
+  _>>=_  {{ MonadMaybe }} nothing _ = nothing
+  _>>=_  {{ MonadMaybe }} (just x) f = f x
+
+
+_ : pure true ≡ just true
+_ = refl
+
+\end{code}
+
+\subsection{Exerscises}
+
+\begin{code}
+
+Matrix : Set → ℕ → ℕ → Set
+Matrix A n m = Vec (Vec A n) m
+
+
+vec : {n : ℕ}{A : Set} → A → Vec A n
+vec {zero} x = []
+vec {suc n} x = x :: vec {n} x
+
+infixl 90 _$_
+_$_ : {n : ℕ}{A B : Set} → Vec (A → B) n → Vec A n → Vec B n
+[] $ [] = []
+(f :: fs) $ (x :: xs) = f x :: (fs $ xs)
+
+{-
+transpose : ∀ {A n m} → Matrix A n m → Matrix A m n
+transpose xss = _ $ (vec xss)
+-}
+
+lem-!-tab : ∀ {A n} (f : Fin n → A)(i : Fin n) → (tabulate f ! i) ≡ f i
+lem-!-tab f fzero = refl
+lem-!-tab f (fsuc x) = lem-!-tab (f ◦ fsuc) x
+
+lem : ∀ {A n} (x : A) (xs : Vec A n) → tabulate (_!_ (x :: xs)) ≡ x :: tabulate (_!_ xs)
+lem x xs = refl
+
+lem-tab-! : ∀ {A n} (xs : Vec A n) → tabulate (_!_ xs) ≡ xs
+lem-tab-! [] = refl
+lem-tab-! (x :: xs) with tabulate (_!_ xs) | lem-tab-! xs
+... | .xs | refl = refl
+\end{code}
+
+\begin{code}
+data ConnectionState : Set where
+  Closed : ConnectionState
+  Open : ConnectionState
+
+data Connection : ConnectionState → Set where
+  newConnection : (state : ConnectionState) → Connection state
+
+openConn : Connection Closed → Connection Open
+openConn = {!!}
+
+foo : Connection Open
+foo = openConn (newConnection Closed)
+
+bar : Connection Open
+bar = openConn  foo
+
+
+
+\end{code}
+
+
+\begin{code}
+infixr 30 _:all:_
+data All {A : Set}(P : A → Set) : List A → Set where
+  all[] : All P []
+  _:all:_ : ∀ {x xs} → P x → All P xs → All P (x :: xs)
+
+satisfies : {A : Set} → (A → Bool) → A → Set
+satisfies p x = isTrue (p x)
+
+data Inspect {A : Set}(x : A) : Set where
+  it : (y : A) → x ≡ y → Inspect x
+
+inspect : {A : Set}(x : A) → Inspect x
+inspect x = it x refl
+
+trueIsTrue : {x : Bool} → x ≡ true → isTrue x
+trueIsTrue refl = _
+
+falseIsFalse : {x : Bool} → x ≡ false → isFalse x
+falseIsFalse refl = _
+
+filter-returns-satisfaction : {A : Set} (P : A → Bool) → (xs : List A) →  All (satisfies P) (filter P xs)
+filter-returns-satisfaction _ [] = all[]
+filter-returns-satisfaction p (x :: xs) with p x with inspect (p x)
+... | true | it true prf  = {! trueIsTrue prf!} :all:  filter-returns-satisfaction p xs
+... | false | it false prf =  filter-returns-satisfaction p xs
+\end{code}

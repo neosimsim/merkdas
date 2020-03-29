@@ -1,0 +1,1 @@
+module Sort (A : Set)(_<_ : A → A → Set) where

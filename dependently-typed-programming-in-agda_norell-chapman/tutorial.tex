@@ -1,0 +1,19 @@
+\documentclass[12pt]{article}
+
+\usepackage{neosimsim}
+\usepackage{neosimsim-a4paper}
+\usepackage{neosimsim-literate-programming}
+% DejaVu Sans is a font which supports the most Unicode symbols used by Agda. Unfortunately it is
+% no monospaces font. However some symbols, e. g. ⦃ are not supported by any monospaced font I
+% checked. Even when using a fallback font (like emacs does), ⦃ is not display with a fixed width.
+% Therefore Agda code cannot be aligned with spaces as we programmers are used to. Aligning
+% code is the only reason, I can think of, to use monospaces fonts. In conjunctions this means
+% It's not a big deal to use a variable width font for Agda code blocks.
+\setmonofont{DejaVuSans}
+
+\begin{document}
+\input{Tutorial.lagda}
+
+\section{Patterns}
+\input{Views.lagda}
+\end{document}

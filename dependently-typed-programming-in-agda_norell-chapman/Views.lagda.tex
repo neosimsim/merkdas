@@ -1,0 +1,49 @@
+\begin{code}
+module Views where
+\end{code}
+
+Views are data types which whole purpose is to tell something
+interesting about it's indices.
+
+Here is a view data type for even and odd numbers.
+\begin{code}
+open import Data.Nat
+open import Function
+open import Data.List
+open import Data.Bool
+
+data Parity : ℕ → Set where
+  even : (k : ℕ) → Parity (k * 2)
+  odd  : (k : ℕ) → Parity (1 + k * 2)
+\end{code}
+
+The view type on it's own is not really useful.
+We need a function that lifts the index type of the
+view type into the view type:
+\begin{code}
+parity : ∀ n → Parity n
+parity zero = even zero
+parity (suc n) with parity n
+parity (suc .(k * 2)) | even k = odd k
+parity (suc .(1 + k * 2)) | odd k = even (suc k)
+\end{code}
+
+\begin{code}
+half : ℕ → ℕ
+half n with parity n
+half .(k * 2)     | even k = k
+half .(1 + k * 2) | odd k  = k
+\end{code}
+
+\begin{code}
+infixr 30 _:all:_
+data All {A : Set}(P : A → Set) : List A → Set where
+  all[] : All P []
+  _:all:_ : ∀ {x xs} → P x → P x → All P xs → All P (x ∷ xs)
+\end{code}
+
+“Turn a decidable predicate into a generat predicate.”
+\begin{code}
+satisfies : {A : Set} → (A → Bool) → A → Set
+satisfies p x = T (p x)
+\end{code}
