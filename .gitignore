@@ -5,7 +5,6 @@
 *.blg
 *.lock
 *.log
-*.mk
 *.o
 *.out
 *.pdf
