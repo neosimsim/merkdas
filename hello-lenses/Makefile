@@ -7,7 +7,7 @@ build:
 
 pdf: hello-lenses.pdf
 
-hello-lenses.pdf: bibliography.bib
+hello-lenses.pdf: bibliography.bib Plain.lhs Records.lhs Lenses.lhs
 
 run: build
 	cabal run
