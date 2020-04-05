@@ -30,7 +30,7 @@ func main() {
 	quit := make(chan bool)
 	c := boring("Joe", quit)
 	for i := rand.Intn(10); i >= 0; i-- {
-			fmt.Println(<-c)
+		fmt.Println(<-c)
 	}
 	quit <- true
 }

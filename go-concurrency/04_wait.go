@@ -6,8 +6,8 @@ package main
 
 import (
 	"fmt"
-	"time"
 	"math/rand"
+	"time"
 )
 
 func boring(msg string) {

@@ -15,7 +15,7 @@ func boring(msg string) <-chan string {
 	go func() {
 		for i := 0; ; i++ {
 			c <- fmt.Sprintf("%s %d", msg, i)
-			time.Sleep(time.Duration(2 * rand.Intn(1e9)) * time.Nanosecond)
+			time.Sleep(time.Duration(2*rand.Intn(1e9)) * time.Nanosecond)
 		}
 	}()
 	return c // Returnthe cannel to the caller

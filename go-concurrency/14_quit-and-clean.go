@@ -35,7 +35,7 @@ func main() {
 	quit := make(chan string)
 	c := boring("Joe", quit)
 	for i := rand.Intn(10); i >= 0; i-- {
-			fmt.Println(<-c)
+		fmt.Println(<-c)
 	}
 	quit <- "Bye!"
 	fmt.Printf("Joe says: %q\n", <-quit)
