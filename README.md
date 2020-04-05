@@ -1,1 +1,6 @@
-Collection of how-tos, tutorials and exercises.
+Collection of
+
+- how-tos
+- tutorials
+- exercises and
+- prototypes
