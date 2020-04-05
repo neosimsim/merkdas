@@ -16,18 +16,7 @@ TEXOBJ = \
 	*.toc \
 	*.vrb \
 
-.tex.pdf:
-	$(TEX) $(TEXFLAGS) -jobname $* $<
-	if grep -q 'Please (re)run Biber on the file:' $*.log; \
-	then \
-		biber $*; \
-		$(TEX) $(TEXFLAGS) $<; \
-	fi
-	if grep -q 'LaTeX Warning: There were undefined references.' $*.log; then\
-		env $(TEX) $(TEXFLAGS) $<;\
-	fi
-
-.lhs.pdf:
+.tex.pdf .lhs.pdf:
 	$(TEX) $(TEXFLAGS) -jobname $* $<
 	if grep -q 'Please (re)run Biber on the file:' $*.log; \
 	then \
