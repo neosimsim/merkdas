@@ -1,0 +1,10 @@
+with-compiler: ghc-8.10.1
+
+package environment-variables-parsing-for-free
+  ghc-options: -Wall -Werror
+
+package *
+  ghc-options: -j
+
+program-options
+  ghc-options: -j
